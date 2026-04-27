@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { QUESTIONS, shuffleQuestions } from "@/lib/questions";
 import { CATEGORY_COLORS } from "@/lib/scoring";
@@ -14,12 +14,19 @@ const SCALE: Record<number, string> = {
   5: "非常によく当てはまる",
 };
 
+const PAGE   = "#060D1F";
+const CARD   = "#0D1628";
+const CARD2  = "#111E33";
+const BORDER = "rgba(255,255,255,0.07)";
+const TEXT1  = "#F1F5F9";
+const TEXT2  = "#64748B";
+
 export default function QuizPage() {
   const router = useRouter();
-  const [questions, setQuestions] = useState(() => shuffleQuestions(QUESTIONS));
-  const [answers, setAnswers]     = useState<Answer[]>([]);
-  const [touched, setTouched]     = useState<Set<string>>(new Set());
-  const [shakeIdx, setShakeIdx]   = useState<number | null>(null);
+  const [questions] = useState(() => shuffleQuestions(QUESTIONS));
+  const [answers, setAnswers]   = useState<Answer[]>([]);
+  const [touched, setTouched]   = useState<Set<string>>(new Set());
+  const [shakeIdx, setShakeIdx] = useState<number | null>(null);
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   const answeredCount = touched.size;
@@ -28,11 +35,8 @@ export default function QuizPage() {
   const progress      = (answeredCount / total) * 100;
 
   const handleSlider = (questionId: string, score: number) => {
-    setTouched((prev) => new Set(prev).add(questionId));
-    setAnswers((prev) => [
-      ...prev.filter((a) => a.questionId !== questionId),
-      { questionId, score },
-    ]);
+    setTouched((p) => new Set(p).add(questionId));
+    setAnswers((p) => [...p.filter((a) => a.questionId !== questionId), { questionId, score }]);
   };
 
   const handleSubmit = () => {
@@ -50,32 +54,38 @@ export default function QuizPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F5F6FA]">
+    <div className="min-h-screen relative" style={{ background: PAGE }}>
 
-      {/* ── Sticky header ───────────────────────────────── */}
-      <header className="sticky top-0 z-20 bg-white/80 backdrop-blur-lg border-b border-gray-100">
-        <div className="max-w-2xl mx-auto px-5 py-3">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-bold text-gray-800 tracking-tight">価値観診断</span>
-            <span className="text-xs text-gray-400 tabular-nums">
-              <span className="font-bold text-gray-700">{answeredCount}</span> / {total}
+      {/* Subtle background orb */}
+      <div className="fixed top-0 left-0 w-full h-full pointer-events-none"
+        style={{ background: "radial-gradient(ellipse 80% 50% at 50% -10%, rgba(99,102,241,0.1) 0%, transparent 60%)" }} />
+
+      {/* ── Sticky header ─────────────────────────────── */}
+      <header className="sticky top-0 z-20 backdrop-blur-xl"
+        style={{ background: "rgba(6,13,31,0.85)", borderBottom: `1px solid ${BORDER}` }}>
+        <div className="max-w-2xl mx-auto px-5 py-3.5">
+          <div className="flex items-center justify-between mb-2.5">
+            <span className="text-[13px] font-bold tracking-tight" style={{ color: TEXT1 }}>
+              価値観診断
+            </span>
+            <span className="text-[12px] tabular-nums" style={{ color: TEXT2 }}>
+              <span style={{ color: TEXT1, fontWeight: 700 }}>{answeredCount}</span>
+              &nbsp;/ {total}
             </span>
           </div>
-          {/* Gradient progress bar */}
-          <div className="h-1 bg-gray-100 rounded-full overflow-hidden">
-            <div
-              className="h-full rounded-full transition-all duration-500"
+          {/* Progress bar */}
+          <div className="h-[3px] rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.07)" }}>
+            <div className="h-full rounded-full transition-all duration-500"
               style={{
                 width: `${progress}%`,
                 background: "linear-gradient(to right, #6366F1, #8B5CF6, #EC4899)",
-              }}
-            />
+              }} />
           </div>
         </div>
       </header>
 
-      {/* ── Question list ───────────────────────────────── */}
-      <div className="max-w-2xl mx-auto px-4 pt-8 pb-4 space-y-3">
+      {/* ── Questions ─────────────────────────────────── */}
+      <div className="max-w-2xl mx-auto px-4 pt-6 pb-4 space-y-3 relative">
         {questions.map((q, i) => {
           const answer    = answers.find((a) => a.questionId === q.id);
           const isTouched = touched.has(q.id);
@@ -87,67 +97,66 @@ export default function QuizPage() {
             <div
               key={q.id}
               ref={(el) => { cardRefs.current[i] = el; }}
-              className={`
-                bg-white rounded-2xl overflow-hidden
-                transition-all duration-300
-                ${isTouched
-                  ? "shadow-md shadow-black/5 border border-gray-100"
-                  : "shadow-sm border border-gray-100/80"}
-                ${shakeIdx === i ? "animate-shake ring-2 ring-rose-300" : ""}
-              `}
+              className={`rounded-2xl overflow-hidden transition-all duration-300 ${
+                shakeIdx === i ? "animate-shake" : ""
+              }`}
+              style={{
+                background: isTouched ? CARD2 : CARD,
+                border: `1px solid ${isTouched ? `${accent}30` : BORDER}`,
+              }}
             >
-              {/* Colored top accent line */}
-              <div className="h-[3px]" style={{ backgroundColor: isTouched ? accent : "#E5E7EB" }} />
+              {/* Top accent line */}
+              <div className="h-[2px] transition-all duration-500"
+                style={{ background: isTouched ? accent : "rgba(255,255,255,0.05)" }} />
 
               <div className="px-6 py-5">
-                {/* Header */}
+                {/* Header row */}
                 <div className="flex items-center justify-between mb-4">
-                  <span className="text-[11px] font-mono font-bold tracking-widest text-gray-300">
+                  <span className="text-[11px] font-mono font-bold tracking-[0.15em]"
+                    style={{ color: isTouched ? `${accent}90` : "rgba(255,255,255,0.2)" }}>
                     Q{String(i + 1).padStart(2, "0")}
                   </span>
                   {isTouched && (
-                    <span
-                      className="text-[11px] font-bold px-2 py-0.5 rounded-full text-white"
-                      style={{ backgroundColor: accent }}
-                    >
-                      ✓
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                      style={{ background: `${accent}25`, color: accent }}>
+                      ✓ 回答済み
                     </span>
                   )}
                 </div>
 
                 {/* Question text */}
-                <p className="text-[15px] font-semibold text-gray-800 leading-relaxed mb-6">
+                <p className="text-[14px] font-medium leading-relaxed mb-6" style={{ color: TEXT1 }}>
                   {q.text}
                 </p>
 
                 {/* Slider */}
                 <input
-                  type="range"
-                  min={1}
-                  max={5}
-                  step={1}
-                  value={score}
+                  type="range" min={1} max={5} step={1} value={score}
                   onChange={(e) => handleSlider(q.id, Number(e.target.value))}
                   className="quiz-slider w-full"
                   style={{
                     "--fill":        `${fillPct}%`,
-                    "--track-fill":  isTouched ? accent : "#D1D5DB",
-                    "--thumb-color": isTouched ? accent : "#D1D5DB",
+                    "--track-fill":  isTouched ? accent : "rgba(255,255,255,0.25)",
+                    "--thumb-color": isTouched ? accent : "rgba(255,255,255,0.3)",
+                    "--bg-card":     CARD,
                   } as React.CSSProperties}
                 />
 
-                {/* Labels */}
-                <div className="flex justify-between items-center mt-2.5">
-                  <span className="text-[10px] text-gray-400 leading-tight max-w-[80px]">全く当てはまらない</span>
-                  <span
-                    className={`text-[11px] font-semibold text-center transition-opacity duration-200 ${
-                      isTouched ? "opacity-100" : "opacity-0"
-                    }`}
-                    style={{ color: accent }}
-                  >
+                {/* Scale labels */}
+                <div className="flex items-center justify-between mt-2.5">
+                  <span className="text-[10px] max-w-[72px] leading-snug" style={{ color: "rgba(255,255,255,0.25)" }}>
+                    全く当てはまらない
+                  </span>
+                  <span className="text-[11px] font-semibold text-center transition-all duration-200"
+                    style={{
+                      color: isTouched ? accent : "transparent",
+                      textShadow: isTouched ? `0 0 12px ${accent}60` : "none",
+                    }}>
                     {SCALE[score]}
                   </span>
-                  <span className="text-[10px] text-gray-400 leading-tight text-right max-w-[80px]">非常によく当てはまる</span>
+                  <span className="text-[10px] max-w-[72px] text-right leading-snug" style={{ color: "rgba(255,255,255,0.25)" }}>
+                    非常によく当てはまる
+                  </span>
                 </div>
               </div>
             </div>
@@ -155,25 +164,24 @@ export default function QuizPage() {
         })}
       </div>
 
-      {/* ── Submit ──────────────────────────────────────── */}
-      <div className="max-w-2xl mx-auto px-4 pt-4 pb-16 text-center">
-        <div className="relative inline-block w-full group">
+      {/* ── Submit ─────────────────────────────────────── */}
+      <div className="max-w-2xl mx-auto px-4 pt-4 pb-16 relative">
+        <div className="relative">
           {allAnswered && (
-            <div className="absolute -inset-0.5 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 opacity-60 blur-sm group-hover:opacity-80 transition-opacity duration-300" />
+            <div className="absolute -inset-[1px] rounded-2xl"
+              style={{ background: "linear-gradient(135deg, #6366F1, #8B5CF6, #EC4899)", opacity: 0.5 }} />
           )}
-          <button
-            onClick={handleSubmit}
-            className={`relative w-full py-4 rounded-2xl font-bold text-base tracking-wide transition-all duration-200 ${
-              allAnswered
-                ? "bg-gradient-to-r from-indigo-600 to-violet-600 text-white hover:scale-[1.01]"
-                : "bg-white text-gray-400 border-2 border-dashed border-gray-200 cursor-default"
-            }`}
-          >
+          <button onClick={handleSubmit}
+            className="relative w-full py-4 rounded-2xl font-bold text-[15px] tracking-wide transition-all duration-200"
+            style={allAnswered
+              ? { background: "linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)", color: "#fff" }
+              : { background: CARD, color: "rgba(255,255,255,0.2)", border: `1px dashed rgba(255,255,255,0.1)` }
+            }>
             {allAnswered ? "結果を見る →" : `残り ${total - answeredCount} 問`}
           </button>
         </div>
         {!allAnswered && (
-          <p className="text-xs text-gray-400 mt-3">
+          <p className="text-center text-[11px] mt-3" style={{ color: "rgba(255,255,255,0.2)" }}>
             クリックすると未回答の質問に移動します
           </p>
         )}
