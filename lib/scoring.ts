@@ -80,12 +80,12 @@ function rawCategoryScore(answers: Answer[], category: ValueCategory): number {
     const ans = answers.find((a) => a.questionId === q.id);
     return sum + (ans?.score ?? 1);
   }, 0);
-  return total / relevant.length; // 1–7
+  return total / relevant.length; // 1–5
 }
 
 function normalize(raw: number): number {
-  // Map 1–7 → 0–100
-  return Math.round(((raw - 1) / 6) * 100);
+  // Map 1–5 → 0–100
+  return Math.round(((raw - 1) / 4) * 100);
 }
 
 export function computeDiagnosis(answers: Answer[]): DiagnosisResult {
