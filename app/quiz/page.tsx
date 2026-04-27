@@ -61,10 +61,6 @@ export default function QuizPage() {
   return (
     <div className="min-h-screen relative" style={{ background: PAGE }}>
 
-      {/* Subtle background orb */}
-      <div className="fixed top-0 left-0 w-full h-full pointer-events-none"
-        style={{ background: "radial-gradient(ellipse 80% 50% at 50% -10%, rgba(99,102,241,0.1) 0%, transparent 60%)" }} />
-
       {/* ── Sticky header ─────────────────────────────── */}
       <header className="sticky top-0 z-20 backdrop-blur-xl"
         style={{ background: "rgba(6,13,31,0.85)", borderBottom: `1px solid ${BORDER}` }}>

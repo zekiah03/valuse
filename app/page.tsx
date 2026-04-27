@@ -15,15 +15,7 @@ export default function Home() {
     <main className="min-h-screen flex items-center justify-center px-5 py-16 relative overflow-hidden"
       style={{ background: "#060D1F" }}>
 
-      {/* Gradient orbs */}
-      <div className="absolute inset-0 pointer-events-none select-none">
-        <div className="absolute top-[-20%] left-[10%] w-[65vw] h-[65vw] max-w-2xl max-h-[500px] rounded-full"
-          style={{ background: "radial-gradient(circle, rgba(99,102,241,0.18) 0%, transparent 70%)", filter: "blur(60px)" }} />
-        <div className="absolute bottom-[-15%] right-[5%] w-[55vw] h-[55vw] max-w-xl max-h-[400px] rounded-full"
-          style={{ background: "radial-gradient(circle, rgba(139,92,246,0.14) 0%, transparent 70%)", filter: "blur(60px)" }} />
-      </div>
-
-      <div className="relative max-w-sm w-full">
+      <div className="max-w-sm w-full">
 
         {/* Badge */}
         <div className="flex justify-center mb-10">
