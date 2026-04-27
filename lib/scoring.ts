@@ -135,3 +135,9 @@ export function computeDiagnosis(answers: Answer[]): DiagnosisResult {
 }
 
 export { CATEGORY_META, MASLOW_META };
+
+export const CATEGORY_COLORS: Record<ValueCategory, string> = Object.fromEntries(
+  (Object.entries(CATEGORY_META) as [ValueCategory, { color: string }][]).map(
+    ([k, v]) => [k, v.color]
+  )
+) as Record<ValueCategory, string>;

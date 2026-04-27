@@ -3,7 +3,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { QUESTIONS, shuffleQuestions } from "@/lib/questions";
-import type { Question, Answer } from "@/types";
+import { CATEGORY_COLORS } from "@/lib/scoring";
+import type { Answer } from "@/types";
 
 const SCALE: Record<number, string> = {
   1: "全く当てはまらない",
@@ -13,29 +14,18 @@ const SCALE: Record<number, string> = {
   5: "非常によく当てはまる",
 };
 
-const CATEGORY_COLOR: Record<string, string> = {
-  moral:        "#3B82F6",
-  social:       "#10B981",
-  personal:     "#8B5CF6",
-  spiritual:    "#F59E0B",
-  economic:     "#EF4444",
-  aesthetic:    "#EC4899",
-  intellectual: "#6366F1",
-};
-
 export default function QuizPage() {
   const router = useRouter();
-  const [questions, setQuestions] = useState<Question[]>([]);
-  const [answers, setAnswers]   = useState<Answer[]>([]);
-  const [touched, setTouched]   = useState<Set<string>>(new Set());
-  const [shakeIdx, setShakeIdx] = useState<number | null>(null);
+  const [questions, setQuestions] = useState(() => shuffleQuestions(QUESTIONS));
+  const [answers, setAnswers]     = useState<Answer[]>([]);
+  const [touched, setTouched]     = useState<Set<string>>(new Set());
+  const [shakeIdx, setShakeIdx]   = useState<number | null>(null);
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
 
-  useEffect(() => { setQuestions(shuffleQuestions(QUESTIONS)); }, []);
-
   const answeredCount = touched.size;
-  const total = questions.length;
-  const allAnswered = answeredCount === total;
+  const total         = questions.length;
+  const allAnswered   = answeredCount === total;
+  const progress      = (answeredCount / total) * 100;
 
   const handleSlider = (questionId: string, score: number) => {
     setTouched((prev) => new Set(prev).add(questionId));
@@ -59,104 +49,134 @@ export default function QuizPage() {
     }
   };
 
-  if (questions.length === 0) return null;
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50">
+    <div className="min-h-screen bg-[#F5F6FA]">
 
-      {/* Sticky progress header */}
-      <div className="sticky top-0 z-10 bg-white/85 backdrop-blur-md border-b border-gray-100 px-4 py-3">
-        <div className="max-w-2xl mx-auto">
-          <div className="flex justify-between text-sm mb-2">
-            <span className="font-semibold text-gray-700">価値観診断</span>
-            <span>
-              <span className="font-bold text-indigo-600">{answeredCount}</span>
-              <span className="text-gray-400"> / {total} 問</span>
+      {/* ── Sticky header ───────────────────────────────── */}
+      <header className="sticky top-0 z-20 bg-white/80 backdrop-blur-lg border-b border-gray-100">
+        <div className="max-w-2xl mx-auto px-5 py-3">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-bold text-gray-800 tracking-tight">価値観診断</span>
+            <span className="text-xs text-gray-400 tabular-nums">
+              <span className="font-bold text-gray-700">{answeredCount}</span> / {total}
             </span>
           </div>
-          <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+          {/* Gradient progress bar */}
+          <div className="h-1 bg-gray-100 rounded-full overflow-hidden">
             <div
-              className="h-full bg-indigo-500 rounded-full transition-all duration-300"
-              style={{ width: `${(answeredCount / total) * 100}%` }}
+              className="h-full rounded-full transition-all duration-500"
+              style={{
+                width: `${progress}%`,
+                background: "linear-gradient(to right, #6366F1, #8B5CF6, #EC4899)",
+              }}
             />
           </div>
         </div>
-      </div>
+      </header>
 
-      {/* Questions list */}
-      <div className="max-w-2xl mx-auto px-4 py-8 space-y-4">
+      {/* ── Question list ───────────────────────────────── */}
+      <div className="max-w-2xl mx-auto px-4 pt-8 pb-4 space-y-3">
         {questions.map((q, i) => {
           const answer    = answers.find((a) => a.questionId === q.id);
           const isTouched = touched.has(q.id);
           const score     = answer?.score ?? 3;
           const fillPct   = ((score - 1) / 4) * 100;
-          const color     = CATEGORY_COLOR[q.category];
+          const accent    = CATEGORY_COLORS[q.category];
 
           return (
             <div
               key={q.id}
               ref={(el) => { cardRefs.current[i] = el; }}
-              className={`bg-white rounded-2xl border-2 px-6 py-5 transition-all duration-200 ${
-                isTouched ? "border-indigo-100 shadow-sm" : "border-gray-100"
-              } ${shakeIdx === i ? "animate-shake ring-2 ring-red-300" : ""}`}
+              className={`
+                bg-white rounded-2xl overflow-hidden
+                transition-all duration-300
+                ${isTouched
+                  ? "shadow-md shadow-black/5 border border-gray-100"
+                  : "shadow-sm border border-gray-100/80"}
+                ${shakeIdx === i ? "animate-shake ring-2 ring-rose-300" : ""}
+              `}
             >
-              {/* Header row */}
-              <div className="flex items-center gap-2 mb-3">
-                <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
-                <span className="text-xs text-gray-400 font-medium">Q{i + 1}</span>
-                {isTouched && <span className="ml-auto text-xs text-indigo-500 font-semibold">✓</span>}
-              </div>
+              {/* Colored top accent line */}
+              <div className="h-[3px]" style={{ backgroundColor: isTouched ? accent : "#E5E7EB" }} />
 
-              {/* Question text */}
-              <p className="text-sm font-semibold text-gray-800 leading-relaxed mb-5">
-                {q.text}
-              </p>
+              <div className="px-6 py-5">
+                {/* Header */}
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-[11px] font-mono font-bold tracking-widest text-gray-300">
+                    Q{String(i + 1).padStart(2, "0")}
+                  </span>
+                  {isTouched && (
+                    <span
+                      className="text-[11px] font-bold px-2 py-0.5 rounded-full text-white"
+                      style={{ backgroundColor: accent }}
+                    >
+                      ✓
+                    </span>
+                  )}
+                </div>
 
-              {/* Slider */}
-              <input
-                type="range"
-                min={1}
-                max={5}
-                step={1}
-                value={score}
-                onChange={(e) => handleSlider(q.id, Number(e.target.value))}
-                className="quiz-slider w-full"
-                style={{
-                  "--fill": isTouched ? `${fillPct}%` : "0%",
-                  "--thumb-color": isTouched ? "#6366F1" : "#CBD5E1",
-                } as React.CSSProperties}
-              />
+                {/* Question text */}
+                <p className="text-[15px] font-semibold text-gray-800 leading-relaxed mb-6">
+                  {q.text}
+                </p>
 
-              {/* Scale labels */}
-              <div className="flex justify-between mt-2">
-                <span className="text-[10px] text-gray-400">全く当てはまらない</span>
-                {isTouched && (
-                  <span className="text-[11px] font-semibold text-indigo-600 text-center">
+                {/* Slider */}
+                <input
+                  type="range"
+                  min={1}
+                  max={5}
+                  step={1}
+                  value={score}
+                  onChange={(e) => handleSlider(q.id, Number(e.target.value))}
+                  className="quiz-slider w-full"
+                  style={{
+                    "--fill":        `${fillPct}%`,
+                    "--track-fill":  isTouched ? accent : "#D1D5DB",
+                    "--thumb-color": isTouched ? accent : "#D1D5DB",
+                  } as React.CSSProperties}
+                />
+
+                {/* Labels */}
+                <div className="flex justify-between items-center mt-2.5">
+                  <span className="text-[10px] text-gray-400 leading-tight max-w-[80px]">全く当てはまらない</span>
+                  <span
+                    className={`text-[11px] font-semibold text-center transition-opacity duration-200 ${
+                      isTouched ? "opacity-100" : "opacity-0"
+                    }`}
+                    style={{ color: accent }}
+                  >
                     {SCALE[score]}
                   </span>
-                )}
-                <span className="text-[10px] text-gray-400">非常によく当てはまる</span>
+                  <span className="text-[10px] text-gray-400 leading-tight text-right max-w-[80px]">非常によく当てはまる</span>
+                </div>
               </div>
             </div>
           );
         })}
+      </div>
 
-        {/* Submit */}
-        <div className="pt-6 text-center pb-12">
+      {/* ── Submit ──────────────────────────────────────── */}
+      <div className="max-w-2xl mx-auto px-4 pt-4 pb-16 text-center">
+        <div className="relative inline-block w-full group">
+          {allAnswered && (
+            <div className="absolute -inset-0.5 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 opacity-60 blur-sm group-hover:opacity-80 transition-opacity duration-300" />
+          )}
           <button
             onClick={handleSubmit}
-            className={`px-14 py-4 rounded-2xl font-bold text-lg transition-all duration-200 ${
+            className={`relative w-full py-4 rounded-2xl font-bold text-base tracking-wide transition-all duration-200 ${
               allAnswered
-                ? "bg-indigo-600 text-white hover:bg-indigo-700 hover:scale-[1.02] shadow-lg"
-                : "bg-white text-gray-400 border-2 border-gray-200"
+                ? "bg-gradient-to-r from-indigo-600 to-violet-600 text-white hover:scale-[1.01]"
+                : "bg-white text-gray-400 border-2 border-dashed border-gray-200 cursor-default"
             }`}
           >
             {allAnswered ? "結果を見る →" : `残り ${total - answeredCount} 問`}
           </button>
-          {!allAnswered && (
-            <p className="text-xs text-gray-400 mt-3">クリックすると未回答の質問に移動します</p>
-          )}
         </div>
+        {!allAnswered && (
+          <p className="text-xs text-gray-400 mt-3">
+            クリックすると未回答の質問に移動します
+          </p>
+        )}
       </div>
     </div>
   );
