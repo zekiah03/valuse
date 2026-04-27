@@ -1,12 +1,11 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { QUESTIONS, shuffleQuestions } from "@/lib/questions";
 import type { Question, Answer } from "@/types";
-import ProgressBar from "@/components/ProgressBar";
 
-const SCALE: { score: number; short: string; full: string }[] = [
+const SCALE = [
   { score: 1, short: "全く",       full: "全く当てはまらない" },
   { score: 2, short: "あまり",     full: "あまり当てはまらない" },
   { score: 3, short: "どちらとも", full: "どちらとも言えない" },
@@ -14,224 +13,173 @@ const SCALE: { score: number; short: string; full: string }[] = [
   { score: 5, short: "非常に",     full: "非常によく当てはまる" },
 ];
 
+const CATEGORY_COLOR: Record<string, string> = {
+  moral:        "#3B82F6",
+  social:       "#10B981",
+  personal:     "#8B5CF6",
+  spiritual:    "#F59E0B",
+  economic:     "#EF4444",
+  aesthetic:    "#EC4899",
+  intellectual: "#6366F1",
+};
+
 export default function QuizPage() {
   const router = useRouter();
   const [questions, setQuestions] = useState<Question[]>([]);
-  const [current, setCurrent] = useState(0);
   const [answers, setAnswers] = useState<Answer[]>([]);
-  const [selected, setSelected] = useState<number | null>(null);
-  const [animating, setAnimating] = useState(false);
-  const [slideDir, setSlideDir] = useState<"up" | "down">("up");
-
-  // refs for scroll / swipe cooldown
-  const cooldown = useRef(false);
-  const touchStartY = useRef<number | null>(null);
+  const [shakeIdx, setShakeIdx] = useState<number | null>(null);
+  const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   useEffect(() => {
     setQuestions(shuffleQuestions(QUESTIONS));
   }, []);
 
-  const currentAnswer = answers.find(
-    (a) => questions[current] && a.questionId === questions[current].id
-  );
-  useEffect(() => {
-    setSelected(currentAnswer?.score ?? null);
-  }, [current, currentAnswer]);
+  const answered = answers.length;
+  const total = questions.length;
+  const allAnswered = answered === total;
 
-  const transition = useCallback(
-    (dir: "up" | "down", fn: () => void) => {
-      if (cooldown.current) return;
-      cooldown.current = true;
-      setSlideDir(dir);
-      setAnimating(true);
-      setTimeout(() => {
-        fn();
-        setAnimating(false);
-        setTimeout(() => { cooldown.current = false; }, 200);
-      }, 180);
-    },
-    []
-  );
+  const handleSelect = (questionId: string, score: number) => {
+    setAnswers((prev) => {
+      const rest = prev.filter((a) => a.questionId !== questionId);
+      return [...rest, { questionId, score }];
+    });
+  };
 
-  const goNext = useCallback(() => {
-    if (selected === null) return;
-    const q = questions[current];
-    const updated = answers.filter((a) => a.questionId !== q.id);
-    updated.push({ questionId: q.id, score: selected });
-
-    if (current === questions.length - 1) {
-      localStorage.setItem("valuse_answers", JSON.stringify(updated));
+  const handleSubmit = () => {
+    if (allAnswered) {
+      localStorage.setItem("valuse_answers", JSON.stringify(answers));
       router.push("/results");
       return;
     }
 
-    transition("up", () => {
-      setAnswers(updated);
-      setCurrent((c) => c + 1);
-    });
-  }, [selected, questions, current, answers, router, transition]);
-
-  const goPrev = useCallback(() => {
-    if (current === 0) return;
-    transition("down", () => setCurrent((c) => c - 1));
-  }, [current, transition]);
-
-  const handleSelect = useCallback((score: number) => {
-    setSelected(score);
-  }, []);
-
-  // ── Wheel scroll navigation ──────────────────────────
-  useEffect(() => {
-    const onWheel = (e: WheelEvent) => {
-      e.preventDefault();
-      if (cooldown.current) return;
-      if (e.deltaY > 40 && selected !== null) goNext();
-      else if (e.deltaY < -40) goPrev();
-    };
-    window.addEventListener("wheel", onWheel, { passive: false });
-    return () => window.removeEventListener("wheel", onWheel);
-  }, [goNext, goPrev, selected]);
-
-  // ── Touch swipe navigation ───────────────────────────
-  useEffect(() => {
-    const onTouchStart = (e: TouchEvent) => {
-      touchStartY.current = e.touches[0].clientY;
-    };
-    const onTouchEnd = (e: TouchEvent) => {
-      if (touchStartY.current === null) return;
-      const delta = touchStartY.current - e.changedTouches[0].clientY;
-      if (delta > 60 && selected !== null) goNext();
-      else if (delta < -60) goPrev();
-      touchStartY.current = null;
-    };
-    window.addEventListener("touchstart", onTouchStart, { passive: true });
-    window.addEventListener("touchend", onTouchEnd, { passive: true });
-    return () => {
-      window.removeEventListener("touchstart", onTouchStart);
-      window.removeEventListener("touchend", onTouchEnd);
-    };
-  }, [goNext, goPrev, selected]);
-
-  // ── Keyboard ─────────────────────────────────────────
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      const n = parseInt(e.key);
-      if (n >= 1 && n <= 5) handleSelect(n);
-      if ((e.key === "Enter" || e.key === "ArrowDown") && selected !== null) goNext();
-      if (e.key === "ArrowUp") goPrev();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [handleSelect, goNext, goPrev, selected]);
+    // Scroll to and shake the first unanswered card
+    const idx = questions.findIndex(
+      (q) => !answers.find((a) => a.questionId === q.id)
+    );
+    if (idx !== -1) {
+      cardRefs.current[idx]?.scrollIntoView({ behavior: "smooth", block: "center" });
+      setShakeIdx(idx);
+      setTimeout(() => setShakeIdx(null), 600);
+    }
+  };
 
   if (questions.length === 0) return null;
 
-  const q = questions[current];
-  const isLast = current === questions.length - 1;
-
-  const slideClass = animating
-    ? slideDir === "up"
-      ? "-translate-y-4 opacity-0"
-      : "translate-y-4 opacity-0"
-    : "translate-y-0 opacity-100";
-
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50 flex flex-col items-center justify-center px-4 py-10 overflow-hidden">
-      <div className="max-w-2xl w-full">
-        <div className="mb-8">
-          <ProgressBar current={current + 1} total={questions.length} />
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50">
 
-        <div
-          className={`bg-white rounded-3xl shadow-sm border border-gray-100 p-8 mb-6 transition-all duration-180 ${slideClass}`}
-          style={{ transition: "transform 0.18s ease, opacity 0.18s ease" }}
-        >
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-5">
-            以下の文章はあなたにどれくらい当てはまりますか？
-          </p>
-          <p className="text-xl font-bold text-gray-900 leading-relaxed mb-10">
-            {q.text}
-          </p>
-
-          {/* 5-button horizontal row */}
-          <div className="overflow-x-auto pb-1 -mx-1">
-            <div className="flex gap-3 min-w-max px-1 mx-auto justify-center">
-              {SCALE.map(({ score, short, full }) => {
-                const isSelected = selected === score;
-                return (
-                  <button
-                    key={score}
-                    onClick={() => handleSelect(score)}
-                    title={full}
-                    className={`flex flex-col items-center gap-2 w-20 py-4 rounded-2xl border-2 transition-all duration-150 hover:scale-105 active:scale-95 ${
-                      isSelected
-                        ? "border-indigo-500 bg-indigo-50"
-                        : "border-gray-100 hover:border-indigo-200 hover:bg-gray-50"
-                    }`}
-                  >
-                    <span
-                      className={`w-11 h-11 rounded-full flex items-center justify-center text-base font-bold transition-colors ${
-                        isSelected
-                          ? "bg-indigo-500 text-white"
-                          : "bg-gray-100 text-gray-400"
-                      }`}
-                    >
-                      {score}
-                    </span>
-                    <span
-                      className={`text-[11px] font-medium text-center leading-tight ${
-                        isSelected ? "text-indigo-600" : "text-gray-400"
-                      }`}
-                    >
-                      {short}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
+      {/* Sticky progress header */}
+      <div className="sticky top-0 z-10 bg-white/85 backdrop-blur-md border-b border-gray-100 px-4 py-3">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex justify-between text-sm text-gray-500 mb-2">
+            <span className="font-semibold text-gray-700">価値観診断</span>
+            <span>
+              <span className="font-bold text-indigo-600">{answered}</span>
+              <span className="text-gray-400"> / {total} 問</span>
+            </span>
           </div>
-
-          {/* Full label of selected */}
-          <div className="mt-5 text-center h-5">
-            {selected !== null && (
-              <p className="text-sm font-medium text-indigo-600 animate-fade-in">
-                {SCALE.find((s) => s.score === selected)?.full}
-              </p>
-            )}
+          <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-indigo-500 rounded-full transition-all duration-300"
+              style={{ width: `${(answered / total) * 100}%` }}
+            />
           </div>
-        </div>
-
-        {/* Navigation */}
-        <div className="flex items-center justify-between">
-          <button
-            onClick={goPrev}
-            disabled={current === 0}
-            className="px-6 py-3 rounded-xl border-2 border-gray-200 text-gray-500 font-medium text-sm hover:border-gray-300 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-          >
-            ↑ 前へ
-          </button>
-
-          <div className="flex flex-col items-center gap-1">
-            {selected !== null ? (
-              <div className="flex flex-col items-center gap-0.5 animate-bounce">
-                <span className="block w-1 h-1 rounded-full bg-indigo-400" />
-                <span className="block w-1 h-1 rounded-full bg-indigo-300" />
-                <span className="block w-1 h-1 rounded-full bg-indigo-200" />
-              </div>
-            ) : (
-              <span className="text-[11px] text-gray-400">選択すると次へ</span>
-            )}
-          </div>
-
-          <button
-            onClick={goNext}
-            disabled={selected === null}
-            className="px-8 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm disabled:opacity-30 disabled:cursor-not-allowed transition-all hover:scale-[1.02] active:scale-[0.98]"
-          >
-            {isLast ? "結果を見る →" : "次へ ↓"}
-          </button>
         </div>
       </div>
-    </main>
+
+      {/* Questions grid */}
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {questions.map((q, i) => {
+            const answer = answers.find((a) => a.questionId === q.id);
+            const isAnswered = !!answer;
+            const isShaking = shakeIdx === i;
+            const color = CATEGORY_COLOR[q.category];
+
+            return (
+              <div
+                key={q.id}
+                ref={(el) => { cardRefs.current[i] = el; }}
+                className={`bg-white rounded-2xl border-2 p-5 transition-all duration-200 ${
+                  isAnswered ? "border-indigo-100 shadow-sm" : "border-gray-100"
+                } ${isShaking ? "animate-shake ring-2 ring-red-300" : ""}`}
+              >
+                {/* Card header */}
+                <div className="flex items-center gap-2 mb-3">
+                  <span
+                    className="w-2 h-2 rounded-full flex-shrink-0"
+                    style={{ backgroundColor: color }}
+                  />
+                  <span className="text-xs text-gray-400 font-medium">Q{i + 1}</span>
+                  {isAnswered && (
+                    <span className="ml-auto text-xs text-indigo-500 font-semibold">✓</span>
+                  )}
+                </div>
+
+                {/* Question text */}
+                <p className="text-sm font-semibold text-gray-800 leading-relaxed mb-4">
+                  {q.text}
+                </p>
+
+                {/* 5-button scale */}
+                <div className="flex gap-1.5">
+                  {SCALE.map(({ score, short, full }) => {
+                    const isSelected = answer?.score === score;
+                    return (
+                      <button
+                        key={score}
+                        onClick={() => handleSelect(q.id, score)}
+                        title={full}
+                        className={`flex flex-col items-center gap-1 flex-1 py-2 rounded-xl border-2 transition-all duration-100 hover:scale-105 active:scale-95 ${
+                          isSelected
+                            ? "border-indigo-400 bg-indigo-50"
+                            : "border-gray-100 hover:border-indigo-200 hover:bg-gray-50"
+                        }`}
+                      >
+                        <span
+                          className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold ${
+                            isSelected
+                              ? "bg-indigo-500 text-white"
+                              : "bg-gray-100 text-gray-400"
+                          }`}
+                        >
+                          {score}
+                        </span>
+                        <span
+                          className={`text-[9px] font-medium leading-tight text-center ${
+                            isSelected ? "text-indigo-600" : "text-gray-400"
+                          }`}
+                        >
+                          {short}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Submit */}
+        <div className="mt-10 text-center pb-12">
+          <button
+            onClick={handleSubmit}
+            className={`px-14 py-4 rounded-2xl font-bold text-lg transition-all duration-200 ${
+              allAnswered
+                ? "bg-indigo-600 text-white hover:bg-indigo-700 hover:scale-[1.02] shadow-lg"
+                : "bg-white text-gray-400 border-2 border-gray-200 cursor-default"
+            }`}
+          >
+            {allAnswered ? "結果を見る →" : `残り ${total - answered} 問`}
+          </button>
+          {!allAnswered && (
+            <p className="text-xs text-gray-400 mt-3">
+              クリックすると未回答の質問に移動します
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
