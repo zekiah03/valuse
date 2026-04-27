@@ -59,7 +59,7 @@ export default function QuizPage() {
   };
 
   return (
-    <div className="min-h-screen relative" style={{ background: PAGE }}>
+    <div className="min-h-screen relative">
 
       {/* ── Sticky header ─────────────────────────────── */}
       <header className="sticky top-0 z-20 backdrop-blur-xl"

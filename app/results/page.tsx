@@ -130,7 +130,7 @@ export default function ResultsPage() {
 
   if (!result) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: PAGE }}>
+      <div className="min-h-screen flex items-center justify-center">
         <div className="w-8 h-8 rounded-full border-2 border-indigo-500 border-t-transparent animate-spin" />
       </div>
     );
@@ -145,7 +145,7 @@ export default function ResultsPage() {
   const dominantMaslow = result.maslow.find((m) => m.stage === result.dominantMaslow)!;
 
   return (
-    <div className="min-h-screen" style={{ background: PAGE }}>
+    <div className="min-h-screen">
       {/* ── Header ─────────────────────────────────────── */}
       <header className="sticky top-0 z-20 backdrop-blur-xl"
         style={{ background: "rgba(6,13,31,0.85)", borderBottom: `1px solid ${BORDER}` }}>

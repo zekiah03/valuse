@@ -12,8 +12,7 @@ const CATEGORIES = [
 
 export default function Home() {
   return (
-    <main className="min-h-screen flex items-center justify-center px-5 py-16 relative overflow-hidden"
-      style={{ background: "#060D1F" }}>
+    <main className="min-h-screen flex items-center justify-center px-5 py-16 relative overflow-hidden">
 
       <div className="max-w-sm w-full">
 

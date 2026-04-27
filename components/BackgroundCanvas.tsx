@@ -54,11 +54,11 @@ export default function BackgroundCanvas() {
     if (!ctx) return;
 
     let W = window.innerWidth;
-    let H = document.documentElement.scrollHeight;
+    let H = window.innerHeight;
 
     const resize = () => {
       W = window.innerWidth;
-      H = document.documentElement.scrollHeight;
+      H = window.innerHeight;
       canvas.width  = W;
       canvas.height = H;
     };
