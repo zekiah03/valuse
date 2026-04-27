@@ -89,7 +89,7 @@ export default function QuizPage() {
 
       {/* Questions grid */}
       <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4">
           {questions.map((q, i) => {
             const answer = answers.find((a) => a.questionId === q.id);
             const isAnswered = !!answer;
