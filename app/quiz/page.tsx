@@ -15,8 +15,8 @@ const SCALE: Record<number, string> = {
 };
 
 const PAGE   = "#060D1F";
-const CARD   = "#0D1628";
-const CARD2  = "#111E33";
+const CARD   = "rgba(13,22,40,0.55)";
+const CARD2  = "rgba(17,30,51,0.65)";
 const BORDER = "rgba(255,255,255,0.07)";
 const TEXT1  = "#F1F5F9";
 const TEXT2  = "#64748B";
@@ -106,6 +106,8 @@ export default function QuizPage() {
               style={{
                 background: isTouched ? CARD2 : CARD,
                 border: `1px solid ${isTouched ? `${accent}30` : BORDER}`,
+                backdropFilter: "blur(12px)",
+                WebkitBackdropFilter: "blur(12px)",
               }}
             >
               {/* Top accent line */}
