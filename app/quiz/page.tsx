@@ -129,34 +129,31 @@ export default function QuizPage() {
                   {q.text}
                 </p>
 
-                {/* Slider */}
-                <input
-                  type="range" min={1} max={5} step={1} value={score}
-                  onChange={(e) => handleSlider(q.id, Number(e.target.value))}
-                  className="quiz-slider w-full"
-                  style={{
-                    "--fill":        `${fillPct}%`,
-                    "--track-fill":  isTouched ? accent : "rgba(255,255,255,0.25)",
-                    "--thumb-color": isTouched ? accent : "rgba(255,255,255,0.3)",
-                    "--bg-card":     CARD,
-                  } as React.CSSProperties}
-                />
-
-                {/* Scale labels */}
-                <div className="flex items-center justify-between mt-2.5">
-                  <span className="text-[10px] max-w-[72px] leading-snug" style={{ color: "rgba(255,255,255,0.25)" }}>
-                    全く当てはまらない
-                  </span>
-                  <span className="text-[11px] font-semibold text-center transition-all duration-200"
+                {/* Slider + ticks */}
+                <div>
+                  <input
+                    type="range" min={1} max={5} step={1} value={score}
+                    onChange={(e) => handleSlider(q.id, Number(e.target.value))}
+                    className="quiz-slider w-full"
                     style={{
-                      color: isTouched ? accent : "transparent",
-                      textShadow: isTouched ? `0 0 12px ${accent}60` : "none",
-                    }}>
-                    {SCALE[score]}
-                  </span>
-                  <span className="text-[10px] max-w-[72px] text-right leading-snug" style={{ color: "rgba(255,255,255,0.25)" }}>
-                    非常によく当てはまる
-                  </span>
+                      "--fill":        `${fillPct}%`,
+                      "--track-fill":  isTouched ? accent : "rgba(255,255,255,0.25)",
+                      "--thumb-color": isTouched ? accent : "rgba(255,255,255,0.3)",
+                      "--bg-card":     CARD,
+                    } as React.CSSProperties}
+                  />
+                  {/* Tick labels — px-[12px] offsets for half-thumb (24px) */}
+                  <div className="flex justify-between px-[12px] mt-2">
+                    {(["全く", "あまり", "どちらとも", "やや", "非常に"] as const).map((lbl, idx) => (
+                      <span
+                        key={lbl}
+                        className="text-[10px] font-medium text-center w-12 -mx-6 transition-all duration-200"
+                        style={{ color: (isTouched && score === idx + 1) ? accent : "rgba(255,255,255,0.22)" }}
+                      >
+                        {lbl}
+                      </span>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
