@@ -1,65 +1,73 @@
-import Image from "next/image";
+import Link from "next/link";
+
+const CATEGORIES = [
+  { label: "道徳・倫理的", color: "#3B82F6" },
+  { label: "社会的", color: "#10B981" },
+  { label: "個人的", color: "#8B5CF6" },
+  { label: "精神的・宗教的", color: "#F59E0B" },
+  { label: "経済的・物質的", color: "#EF4444" },
+  { label: "審美的", color: "#EC4899" },
+  { label: "知的", color: "#6366F1" },
+];
 
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <main className="min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50 flex items-center justify-center px-4 py-16">
+      <div className="max-w-xl w-full">
+        <div className="text-center mb-10">
+          <h1 className="text-4xl font-extrabold text-gray-900 mb-3 tracking-tight">
+            価値観診断
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="text-gray-500 text-lg leading-relaxed">
+            42の質問に答えて、あなたの価値観の構造を可視化します。
+            <br />
+            所要時間：約 <strong className="text-gray-700">8〜10 分</strong>
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8 mb-8">
+          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">
+            診断する価値観の軸
+          </h2>
+          <div className="flex flex-wrap gap-2 mb-6">
+            {CATEGORIES.map((c) => (
+              <span
+                key={c.label}
+                className="text-sm px-3 py-1 rounded-full text-white font-medium"
+                style={{ backgroundColor: c.color }}
+              >
+                {c.label}
+              </span>
+            ))}
+          </div>
+          <div className="border-t border-gray-100 pt-5 space-y-3 text-sm text-gray-600">
+            <div className="flex gap-2">
+              <span className="text-indigo-500 font-bold">✦</span>
+              <span>7つの価値観カテゴリをレーダーチャートで可視化</span>
+            </div>
+            <div className="flex gap-2">
+              <span className="text-indigo-500 font-bold">✦</span>
+              <span>マズローの欲求階層との対応も診断結果に表示</span>
+            </div>
+            <div className="flex gap-2">
+              <span className="text-indigo-500 font-bold">✦</span>
+              <span>回答は保存されません。ブラウザ内で完結します</span>
+            </div>
+          </div>
         </div>
-      </main>
-    </div>
+
+        <div className="text-center">
+          <Link
+            href="/quiz"
+            className="inline-block bg-indigo-600 hover:bg-indigo-700 text-white text-lg font-bold px-10 py-4 rounded-2xl shadow-md transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+          >
+            診断を始める
+          </Link>
+          <p className="text-xs text-gray-400 mt-4">
+            各質問に直感で答えてください。正解・不正解はありません。
+          </p>
+        </div>
+      </div>
+    </main>
   );
 }
