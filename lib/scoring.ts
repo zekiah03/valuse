@@ -1,48 +1,56 @@
 import type { Answer, CategoryResult, MaslowResult, DiagnosisResult, ValueCategory, MaslowStage } from "@/types";
 import { QUESTIONS } from "./questions";
 
+// 3-color palette shared across all categories
+// Indigo  (#6366F1) — society-oriented : moral, social
+// Violet  (#8B5CF6) — self-oriented    : personal, spiritual, intellectual
+// Pink    (#EC4899) — sensory/material : aesthetic, economic
+const INDIGO  = "#6366F1";
+const VIOLET  = "#8B5CF6";
+const PINK    = "#EC4899";
+
 const CATEGORY_META: Record<ValueCategory, { label: string; description: string; color: string }> = {
   moral: {
     label: "道徳・倫理的",
-    color: "#3B82F6",
+    color: INDIGO,
     description:
       "誠実さ・正義・思いやりを行動の軸に置いています。他者への責任感が強く、社会の公正を守ることに深くコミットしています。",
   },
   social: {
     label: "社会的",
-    color: "#10B981",
+    color: INDIGO,
     description:
       "家族・友情・コミュニティとの絆を何より大切にしています。人との繋がりの中に生きがいを見出し、協調と平等を重んじます。",
   },
   personal: {
     label: "個人的",
-    color: "#8B5CF6",
+    color: VIOLET,
     description:
       "自己実現・自律・成長を人生の中心に据えています。自分らしく生きることへの強い意志を持ち、内なる幸福を追求します。",
   },
   spiritual: {
     label: "精神的・宗教的",
-    color: "#F59E0B",
+    color: VIOLET,
     description:
       "人生の意味・超越性・内なる平和を探求しています。物質を超えた次元に価値を見出し、存在の深さを問い続けます。",
   },
-  economic: {
-    label: "経済的・物質的",
-    color: "#EF4444",
+  intellectual: {
+    label: "知的",
+    color: VIOLET,
     description:
-      "安定・成功・豊かさを重要な基盤と捉えています。将来への備えと効率的な成果を意識しながら、経済的自由を目指します。",
+      "真理・知識・論理的探究を愛しています。好奇心旺盛で学び続けることに喜びを感じ、複雑な問いと向き合います。",
   },
   aesthetic: {
     label: "審美的",
-    color: "#EC4899",
+    color: PINK,
     description:
       "美・創造性・芸術的表現に深い価値を感じています。感性を磨き、美しいものを鑑賞・創造することで人生を豊かにします。",
   },
-  intellectual: {
-    label: "知的",
-    color: "#6366F1",
+  economic: {
+    label: "経済的・物質的",
+    color: PINK,
     description:
-      "真理・知識・論理的探究を愛しています。好奇心旺盛で学び続けることに喜びを感じ、複雑な問いと向き合います。",
+      "安定・成功・豊かさを重要な基盤と捉えています。将来への備えと効率的な成果を意識しながら、経済的自由を目指します。",
   },
 };
 
