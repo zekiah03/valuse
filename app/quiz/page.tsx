@@ -24,9 +24,11 @@ const TEXT2  = "#64748B";
 export default function QuizPage() {
   const router = useRouter();
   const [questions] = useState(() => shuffleQuestions(QUESTIONS));
-  const [answers, setAnswers]   = useState<Answer[]>([]);
-  const [touched, setTouched]   = useState<Set<string>>(new Set());
-  const [shakeIdx, setShakeIdx] = useState<number | null>(null);
+  const [answers, setAnswers]     = useState<Answer[]>([]);
+  const [touched, setTouched]     = useState<Set<string>>(new Set());
+  // continuous float values for smooth dragging (1.0–5.0)
+  const [rawValues, setRawValues] = useState<Record<string, number>>({});
+  const [shakeIdx, setShakeIdx]   = useState<number | null>(null);
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   const answeredCount = touched.size;
@@ -34,8 +36,11 @@ export default function QuizPage() {
   const allAnswered   = answeredCount === total;
   const progress      = (answeredCount / total) * 100;
 
-  const handleSlider = (questionId: string, score: number) => {
+  const handleSlider = (questionId: string, raw: number) => {
+    setRawValues((p) => ({ ...p, [questionId]: raw }));
     setTouched((p) => new Set(p).add(questionId));
+    // snap to nearest integer for the stored score
+    const score = Math.round(raw);
     setAnswers((p) => [...p.filter((a) => a.questionId !== questionId), { questionId, score }]);
   };
 
@@ -89,8 +94,10 @@ export default function QuizPage() {
         {questions.map((q, i) => {
           const answer    = answers.find((a) => a.questionId === q.id);
           const isTouched = touched.has(q.id);
-          const score     = answer?.score ?? 3;
-          const fillPct   = ((score - 1) / 4) * 100;
+          // use continuous float for smooth display; fall back to stored integer or center
+          const rawVal    = rawValues[q.id] ?? answer?.score ?? 3;
+          const snapScore = Math.round(rawVal);
+          const fillPct   = ((rawVal - 1) / 4) * 100;
           const accent    = CATEGORY_COLORS[q.category];
 
           return (
@@ -132,7 +139,7 @@ export default function QuizPage() {
                 {/* Slider + ticks */}
                 <div>
                   <input
-                    type="range" min={1} max={5} step={1} value={score}
+                    type="range" min={1} max={5} step={0.01} value={rawVal}
                     onChange={(e) => handleSlider(q.id, Number(e.target.value))}
                     className="quiz-slider w-full"
                     style={{
@@ -148,7 +155,7 @@ export default function QuizPage() {
                       <span
                         key={lbl}
                         className="text-[10px] font-medium text-center w-12 -mx-6 transition-all duration-200"
-                        style={{ color: (isTouched && score === idx + 1) ? accent : "rgba(255,255,255,0.22)" }}
+                        style={{ color: (isTouched && snapScore === idx + 1) ? accent : "rgba(255,255,255,0.22)" }}
                       >
                         {lbl}
                       </span>
