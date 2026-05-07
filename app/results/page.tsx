@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { computeDiagnosis } from "@/lib/scoring";
+import { contributeToTwin } from "@/lib/contribute";
 import type { DiagnosisResult, Answer, CategoryResult, MaslowResult } from "@/types";
 import dynamic from "next/dynamic";
 import Link from "next/link";
@@ -20,17 +21,13 @@ const TEXT2  = "#64748B";
 /** Read-only slider that mirrors the quiz slider design */
 function ScoreSlider({ score, color, dimmed = false }: { score: number; color: string; dimmed?: boolean }) {
   const opacity = dimmed ? 0.4 : 1;
-  // Thumb position: score 0–100 maps to left 0%–100% centered on thumb (24px)
-  // left = calc(score% - score/100 * 24px) ≈ calc(score% - {score*0.24}px)
   const thumbLeft = `calc(${score}% - ${score * 0.24}px)`;
 
   return (
     <div>
-      {/* Track */}
       <div className="relative h-[6px] rounded-full" style={{ background: "rgba(255,255,255,0.07)" }}>
         <div className="absolute left-0 top-0 h-full rounded-full transition-all duration-700"
           style={{ width: `${score}%`, background: color, opacity }} />
-        {/* Thumb */}
         <div className="absolute top-1/2 w-6 h-6 rounded-full -translate-y-1/2 transition-all duration-700"
           style={{
             left: thumbLeft,
@@ -40,7 +37,6 @@ function ScoreSlider({ score, color, dimmed = false }: { score: number; color: s
             opacity,
           }} />
       </div>
-      {/* Tick labels */}
       <div className="flex justify-between px-[12px] mt-2">
         {TICK_LABELS.map((lbl) => (
           <span key={lbl} className="text-[9px] font-medium text-center w-12 -mx-6"
@@ -124,8 +120,15 @@ export default function ResultsPage() {
   useEffect(() => {
     const raw = localStorage.getItem("valuse_answers");
     if (!raw) { router.replace("/quiz"); return; }
-    try { setResult(computeDiagnosis(JSON.parse(raw) as Answer[])); }
-    catch { router.replace("/quiz"); }
+    try {
+      const r = computeDiagnosis(JSON.parse(raw) as Answer[]);
+      setResult(r);
+      contributeToTwin('valuse', {
+        categories: r.categories.map((c) => ({ category: c.category, label: c.label, score: c.score })),
+        dominantMaslow: r.dominantMaslow,
+        maslow: r.maslow.map((m) => ({ stage: m.stage, label: m.label, score: m.score })),
+      });
+    } catch { router.replace("/quiz"); }
   }, [router]);
 
   if (!result) {
