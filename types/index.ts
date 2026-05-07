@@ -11,7 +11,17 @@ export type MaslowStage =
   | "safety"
   | "belonging"
   | "esteem"
-  | "selfActualization";
+  | "selfActualization"
+  | "transcendence";
+
+export type ValueArchetype =
+  | "guardian"
+  | "seeker"
+  | "pioneer"
+  | "creator"
+  | "builder"
+  | "harmonizer"
+  | "sage";
 
 export interface Question {
   id: string;
@@ -21,7 +31,7 @@ export interface Question {
 
 export interface Answer {
   questionId: string;
-  score: number; // 1–6
+  score: number; // 1–5
 }
 
 export interface CategoryResult {
@@ -40,9 +50,31 @@ export interface MaslowResult {
   color: string;
 }
 
+export interface ArchetypeResult {
+  archetype: ValueArchetype;
+  label: string;
+  subtitle: string;
+  motif: string;
+  description: string;
+  color: string;
+  affinity: number; // 0–100
+  secondary?: { archetype: ValueArchetype; label: string };
+}
+
+export interface TensionPair {
+  catA: ValueCategory;
+  catB: ValueCategory;
+  labelA: string;
+  labelB: string;
+  tension: number; // 0–1
+  description: string;
+}
+
 export interface DiagnosisResult {
   categories: CategoryResult[];
   maslow: MaslowResult[];
   dominantCategories: ValueCategory[];
   dominantMaslow: MaslowStage;
+  archetype: ArchetypeResult;
+  tensions: TensionPair[];
 }
