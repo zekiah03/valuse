@@ -11,18 +11,17 @@ import Link from "next/link";
 const ValuesRadarChart = dynamic(() => import("@/components/ValuesRadarChart"), { ssr: false });
 
 const MASLOW_ORDER  = ["safety", "belonging", "esteem", "selfActualization"];
-const TICK_LABELS   = ["全く", "あまり", "どちらとも", "やや", "非常に"];
-const PAGE   = "#060D1F";
+const TICK_LABELS   = ["全く", "あまり", "どちらとも", "やや", "非常"];
 const CARD   = "#0D1628";
 const BORDER = "rgba(255,255,255,0.07)";
 const TEXT1  = "#F1F5F9";
 const TEXT2  = "#64748B";
 
-/** Read-only slider that mirrors the quiz slider design */
+type SelfResonance = 'yes' | 'mid' | 'no';
+
 function ScoreSlider({ score, color, dimmed = false }: { score: number; color: string; dimmed?: boolean }) {
   const opacity = dimmed ? 0.4 : 1;
   const thumbLeft = `calc(${score}% - ${score * 0.24}px)`;
-
   return (
     <div>
       <div className="relative h-[6px] rounded-full" style={{ background: "rgba(255,255,255,0.07)" }}>
@@ -30,11 +29,8 @@ function ScoreSlider({ score, color, dimmed = false }: { score: number; color: s
           style={{ width: `${score}%`, background: color, opacity }} />
         <div className="absolute top-1/2 w-6 h-6 rounded-full -translate-y-1/2 transition-all duration-700"
           style={{
-            left: thumbLeft,
-            background: color,
-            border: `3px solid ${CARD}`,
-            boxShadow: "0 2px 10px rgba(0,0,0,0.5)",
-            opacity,
+            left: thumbLeft, background: color, border: `3px solid ${CARD}`,
+            boxShadow: "0 2px 10px rgba(0,0,0,0.5)", opacity,
           }} />
       </div>
       <div className="flex justify-between px-[12px] mt-2">
@@ -116,6 +112,7 @@ function MaslowSliderCard({ item, isDominant }: { item: MaslowResult; isDominant
 export default function ResultsPage() {
   const router = useRouter();
   const [result, setResult] = useState<DiagnosisResult | null>(null);
+  const [selfResonance, setSelfResonance] = useState<SelfResonance | null>(null);
 
   useEffect(() => {
     const raw = localStorage.getItem("valuse_answers");
@@ -130,6 +127,18 @@ export default function ResultsPage() {
       });
     } catch { router.replace("/quiz"); }
   }, [router]);
+
+  function handleSelfResonance(rating: SelfResonance) {
+    if (selfResonance || !result) return;
+    setSelfResonance(rating);
+    // SUST v0.3: M_self_rated_coherence への寄与
+    contributeToTwin('valuse', {
+      type: 'self_resonance',
+      rating, // 'yes' | 'mid' | 'no'
+      dominantMaslow: result.dominantMaslow,
+      topCategory: [...result.categories].sort((a, b) => b.score - a.score)[0]?.category,
+    });
+  }
 
   if (!result) {
     return (
@@ -149,7 +158,6 @@ export default function ResultsPage() {
 
   return (
     <div className="min-h-screen">
-      {/* ── Header ─────────────────────────────────────── */}
       <header className="sticky top-0 z-20 backdrop-blur-xl"
         style={{ background: "rgba(6,13,31,0.85)", borderBottom: `1px solid ${BORDER}` }}>
         <div className="max-w-2xl mx-auto px-5 py-3.5 flex items-center justify-between">
@@ -164,7 +172,6 @@ export default function ResultsPage() {
 
       <div className="max-w-2xl mx-auto px-4 py-10 space-y-5 relative">
 
-        {/* ── Hero ───────────────────────────────────────── */}
         <div className="text-center pt-2 pb-6">
           <p className="text-[11px] font-bold uppercase tracking-[0.2em] mb-4" style={{ color: TEXT2 }}>
             Your Value Profile
@@ -182,7 +189,6 @@ export default function ResultsPage() {
           </div>
         </div>
 
-        {/* ── Radar ──────────────────────────────────────── */}
         <section className="rounded-2xl overflow-hidden" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
           <p className="px-6 pt-5 text-[11px] font-bold uppercase tracking-[0.15em]" style={{ color: TEXT2 }}>
             価値観バランス
@@ -190,7 +196,6 @@ export default function ResultsPage() {
           <ValuesRadarChart categories={result.categories} />
         </section>
 
-        {/* ── Top 3 ──────────────────────────────────────── */}
         <section>
           <p className="text-[11px] font-bold uppercase tracking-[0.15em] mb-3 px-1" style={{ color: TEXT2 }}>
             Top 3 — 特に強い価値観
@@ -202,7 +207,6 @@ export default function ResultsPage() {
           </div>
         </section>
 
-        {/* ── All scores ─────────────────────────────────── */}
         <section className="rounded-2xl p-6" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
           <p className="text-[11px] font-bold uppercase tracking-[0.15em] mb-5" style={{ color: TEXT2 }}>
             全カテゴリ スコア
@@ -225,7 +229,6 @@ export default function ResultsPage() {
           </div>
         </section>
 
-        {/* ── Maslow ─────────────────────────────────────── */}
         <section className="rounded-2xl p-6" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
           <p className="text-[11px] font-bold uppercase tracking-[0.15em] mb-1" style={{ color: TEXT2 }}>
             マズローの欲求階層
@@ -247,6 +250,47 @@ export default function ResultsPage() {
               {dominantMaslow.description}
             </p>
           </div>
+        </section>
+
+        {/* SUST v0.3: 自己整合性フィードバック */}
+        <section className="rounded-2xl p-6" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
+          <p className="text-[13px] font-semibold mb-2" style={{ color: TEXT1 }}>
+            この診断、しっくり来た?
+          </p>
+          <p className="text-[11px] mb-4" style={{ color: TEXT2 }}>
+            あなたのツインの「自己物語整合性」推定に反映されます。
+          </p>
+          <div className="flex gap-2 flex-wrap">
+            {([
+              { key: 'yes' as const, label: 'しっくり来た', color: '#10b981' },
+              { key: 'mid' as const, label: 'どちらとも',  color: '#6b7280' },
+              { key: 'no'  as const, label: 'ピンと来ない', color: '#f59e0b' },
+            ]).map(({ key, label, color }) => {
+              const selected = selfResonance === key;
+              const dim = selfResonance && !selected;
+              return (
+                <button
+                  key={key}
+                  onClick={() => handleSelfResonance(key)}
+                  disabled={!!selfResonance}
+                  className="px-4 py-2 rounded-full text-[12px] font-semibold transition-opacity"
+                  style={{
+                    color, background: `${color}10`,
+                    border: `1px solid ${selected ? color : `${color}40`}`,
+                    opacity: dim ? 0.4 : 1,
+                    cursor: selfResonance ? 'default' : 'pointer',
+                  }}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+          {selfResonance && (
+            <p className="text-[11px] mt-3" style={{ color: TEXT2 }}>
+              ありがとうございます。記録しました。
+            </p>
+          )}
         </section>
 
         <div className="h-10" />
