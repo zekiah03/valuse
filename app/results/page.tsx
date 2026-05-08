@@ -6,6 +6,7 @@ import { computeDiagnosis } from "@/lib/scoring";
 import type { DiagnosisResult, Answer, CategoryResult, MaslowResult, ArchetypeResult, TensionPair } from "@/types";
 import dynamic from "next/dynamic";
 import Link from "next/link";
+import { contributeToTwin } from "@/lib/contribute";
 
 const ValuesRadarChart = dynamic(() => import("@/components/ValuesRadarChart"), { ssr: false });
 
@@ -108,7 +109,6 @@ function ArchetypeCard({ archetype }: { archetype: ArchetypeResult }) {
     <div className="rounded-2xl overflow-hidden" style={{ border: `1px solid ${c}30` }}>
       <div className="h-1" style={{ background: `linear-gradient(to right, ${c}, ${c}66)` }} />
       <div className="p-6" style={{ background: `${c}08` }}>
-        {/* Header row */}
         <div className="flex items-start justify-between mb-5">
           <div>
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] mb-1.5" style={{ color: c }}>
@@ -121,7 +121,6 @@ function ArchetypeCard({ archetype }: { archetype: ArchetypeResult }) {
               {archetype.subtitle}
             </p>
           </div>
-          {/* Affinity ring */}
           <div className="flex flex-col items-center flex-shrink-0 ml-4">
             <div className="relative w-14 h-14">
               <svg viewBox="0 0 56 56" className="w-full h-full -rotate-90">
@@ -139,21 +138,15 @@ function ArchetypeCard({ archetype }: { archetype: ArchetypeResult }) {
             <span className="text-[9px] mt-1" style={{ color: TEXT2 }}>適合度</span>
           </div>
         </div>
-
-        {/* Motif */}
         <div className="flex items-center gap-2 mb-4">
           <div className="w-px h-4 rounded-full" style={{ background: c }} />
           <p className="text-[12px] font-semibold italic" style={{ color: `${c}bb` }}>
             「{archetype.motif}」
           </p>
         </div>
-
-        {/* Description */}
         <p className="text-[13px] leading-relaxed mb-4" style={{ color: TEXT2 }}>
           {archetype.description}
         </p>
-
-        {/* Secondary archetype badge */}
         {archetype.secondary && (
           <div className="flex items-center gap-2 pt-4" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
             <span className="text-[10px]" style={{ color: TEXT2 }}>副アーキタイプ</span>
@@ -216,8 +209,18 @@ export default function ResultsPage() {
   useEffect(() => {
     const raw = localStorage.getItem("valuse_answers");
     if (!raw) { router.replace("/quiz"); return; }
-    try { setResult(computeDiagnosis(JSON.parse(raw) as Answer[])); }
-    catch { router.replace("/quiz"); }
+    try {
+      const r = computeDiagnosis(JSON.parse(raw) as Answer[]);
+      setResult(r);
+      if (!sessionStorage.getItem('valuse_contributed')) {
+        sessionStorage.setItem('valuse_contributed', '1');
+        contributeToTwin('valuse', {
+          archetype: r.archetype.label,
+          dominantMaslow: r.dominantMaslow,
+          top3: [...r.categories].sort((a, b) => b.score - a.score).slice(0, 3).map(c => ({ category: c.category, score: c.score })),
+        });
+      }
+    } catch { router.replace("/quiz"); }
   }, [router]);
 
   if (!result) {
@@ -238,7 +241,6 @@ export default function ResultsPage() {
 
   return (
     <div className="min-h-screen">
-      {/* ── Header ─────────────────────────────────────── */}
       <header className="sticky top-0 z-20 backdrop-blur-xl"
         style={{ background: "rgba(6,13,31,0.85)", borderBottom: `1px solid ${BORDER}` }}>
         <div className="max-w-2xl mx-auto px-5 py-3.5 flex items-center justify-between">
@@ -252,8 +254,6 @@ export default function ResultsPage() {
       </header>
 
       <div className="max-w-2xl mx-auto px-4 py-10 space-y-5 relative">
-
-        {/* ── Hero ───────────────────────────────────────── */}
         <div className="text-center pt-2 pb-6">
           <p className="text-[11px] font-bold uppercase tracking-[0.2em] mb-4" style={{ color: TEXT2 }}>
             Your Value Profile
@@ -271,10 +271,8 @@ export default function ResultsPage() {
           </div>
         </div>
 
-        {/* ── Archetype ──────────────────────────────────── */}
         <ArchetypeCard archetype={result.archetype} />
 
-        {/* ── Radar ──────────────────────────────────────── */}
         <section className="rounded-2xl overflow-hidden" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
           <p className="px-6 pt-5 text-[11px] font-bold uppercase tracking-[0.15em]" style={{ color: TEXT2 }}>
             価値観バランス
@@ -282,7 +280,6 @@ export default function ResultsPage() {
           <ValuesRadarChart categories={result.categories} />
         </section>
 
-        {/* ── Top 3 ──────────────────────────────────────── */}
         <section>
           <p className="text-[11px] font-bold uppercase tracking-[0.15em] mb-3 px-1" style={{ color: TEXT2 }}>
             Top 3 — 特に強い価値観
@@ -294,7 +291,6 @@ export default function ResultsPage() {
           </div>
         </section>
 
-        {/* ── All scores ─────────────────────────────────── */}
         <section className="rounded-2xl p-6" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
           <p className="text-[11px] font-bold uppercase tracking-[0.15em] mb-5" style={{ color: TEXT2 }}>
             全カテゴリ スコア
@@ -317,7 +313,6 @@ export default function ResultsPage() {
           </div>
         </section>
 
-        {/* ── Maslow ─────────────────────────────────────── */}
         <section className="rounded-2xl p-6" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
           <p className="text-[11px] font-bold uppercase tracking-[0.15em] mb-1" style={{ color: TEXT2 }}>
             マズローの欲求階層
@@ -341,7 +336,6 @@ export default function ResultsPage() {
           </div>
         </section>
 
-        {/* ── Tension analysis ───────────────────────────── */}
         <TensionSection tensions={result.tensions} />
 
         <div className="h-10" />
